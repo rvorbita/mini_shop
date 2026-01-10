@@ -1,0 +1,33 @@
+name: Mini Shop CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Build Docker image
+      run: docker build -t mini_shop .
+
+    - name: Deploy to Homelab
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          cd ${{ secrets.APP_DIR }} || mkdir -p ${{ secrets.APP_DIR }} && cd ${{ secrets.APP_DIR }}
+          if [ ! -d .git ]; then
+            git clone https://github.com/rvorbita/mini_shop.git .
+          else
+            git pull
+          fi
+          docker compose down
+          docker compose up -d --build
+
