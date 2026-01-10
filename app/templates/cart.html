@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">Your Cart</h2>
+
+{% if items %}
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Product</th>
+            <th>Qty</th>
+            <th>Subtotal</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for product, qty, subtotal in items %}
+        <tr>
+            <td>{{ product.name }}</td>
+            <td>{{ qty }}</td>
+            <td>${{ "%.2f"|format(subtotal) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="d-flex justify-content-between align-items-center mt-3">
+    <h4>Total: ${{ "%.2f"|format(total) }}</h4>
+    <a href="{{ url_for('shop.checkout') }}" class="btn btn-primary">Checkout</a>
+</div>
+{% else %}
+<div class="alert alert-info">
+    Your cart is empty.
+</div>
+<a href="{{ url_for('shop.index') }}" class="btn btn-secondary">Back to Shop</a>
+{% endif %}
+{% endblock %}

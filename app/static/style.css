@@ -1,0 +1,17 @@
+body {
+    font-family: "Arial", sans-serif;
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: bold;
+}
+
+.card img {
+    object-fit: cover;
+    height: 200px;
+}
+
+h2 {
+    margin-bottom: 20px;
+}

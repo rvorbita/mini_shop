@@ -1,0 +1,29 @@
+services:
+  web:
+    build: .
+    container_name: mini_shop_web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    env_file:
+      - .env
+    volumes:
+      - ./static/uploads:/app/static/uploads
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: mini_shop_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: mini_shop
+      POSTGRES_USER: shopuser
+      POSTGRES_PASSWORD: shoppass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
