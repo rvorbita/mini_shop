@@ -9,25 +9,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Checkout your repository code
     - name: Checkout code
       uses: actions/checkout@v4
 
+    # Step 2: Build Docker image locally (on GitHub runner)
     - name: Build Docker image
       run: docker build -t mini_shop .
 
+    # Step 3: Deploy to your homelab via SSH
     - name: Deploy to Homelab
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
+        host: ${{ secrets.SSH_HOST }}        # Your server IP or hostname
+        username: ${{ secrets.SSH_USER }}    # Your SSH username
+        key: ${{ secrets.SSH_KEY }}          # Private SSH key stored as GitHub Secret
+        port: ${{ secrets.SSH_PORT }}        # Optional, default is 22
         script: |
-          cd ${{ secrets.APP_DIR }} || mkdir -p ${{ secrets.APP_DIR }} && cd ${{ secrets.APP_DIR }}
+          # Go to the app folder (create if missing)
+          mkdir -p ${{ secrets.APP_DIR }}
+          cd ${{ secrets.APP_DIR }}
+
+          # Clone repo if it doesn't exist, else pull latest changes
           if [ ! -d .git ]; then
             git clone https://github.com/rvorbita/mini_shop.git .
           else
-            git pull
+            git pull origin main
           fi
+
+          # Stop any running containers, rebuild, and start
           docker compose down
           docker compose up -d --build
-
