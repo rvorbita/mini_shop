@@ -19,6 +19,7 @@ pipeline {
     stage('Test Container') {
       steps {
         sh '''
+          docker rm -f test_app || true
           docker run -d -p 5001:5001 --name test_app mini_shop:latest
           sleep 5
           curl -f http://localhost:5001 || exit 1
