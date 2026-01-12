@@ -1,75 +1,73 @@
+
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        DOCKER_IMAGE = "rvorbita/mini_shop"
-        DOCKER_TAG = "latest"
+  environment {
+    IMAGE_NAME = "rvorbita/mini_shop"
+    IMAGE_TAG  = "${BUILD_NUMBER}"
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        cleanWs()
+        git branch: 'main', credentialsId: 'github-creds',
+            url: 'https://github.com/rvorbita/mini_shop.git'
+      }
     }
 
-    stages {
-
-        stage('Checkout') {
-            steps {
-                cleanWs()
-                git branch: 'main', credentialsId: 'github-creds', url: 'https://github.com/rvorbita/mini_shop.git'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                sh """
-                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                """
-            }
-        }
-
-        stage('Test Docker Image') {
-            steps {
-                sh """
-                    docker rm -f test_app || true
-                    docker run -d -p 5001:5001 --name test_app ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    sleep 5
-                    curl -f http://localhost:5001 || exit 1
-                    docker rm -f test_app
-                """
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_PASS')]) {
-                    sh """
-                        echo $DOCKER_PASS | docker login -u rvorbita --password-stdin
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    """
-                }
-            }
-        }
-
-        stage('Deploy to k3s') {
-            steps {
-                withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG')]) {
-                    sh """
-                        export KUBECONFIG=$KUBECONFIG
-                        
-                        # Apply Kubernetes manifests
-                        kubectl apply -f k8s/deployment.yaml
-                        kubectl apply -f k8s/service.yaml
-
-                        # Optional: rollout status to wait until deployment is ready
-                        kubectl rollout status deployment/mini-shop
-                    """
-                }
-            }
-        }
+    stage('Build Image') {
+      steps {
+        sh '''
+          docker build -t $IMAGE_NAME:$IMAGE_TAG .
+          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+        '''
+      }
     }
 
-    post {
-        failure {
-            echo "Pipeline failed! Check the logs above for details."
-        }
-        success {
-            echo "Pipeline succeeded! Your mini-shop app is deployed to k3s."
-        }
+    stage('Test Image') {
+      steps {
+        sh '''
+          docker rm -f test_app || true
+          docker run -d -p 5001:5001 --name test_app $IMAGE_NAME:$IMAGE_TAG
+          sleep 5
+          curl -f http://localhost:5001
+          docker rm -f test_app
+        '''
+      }
     }
+
+    stage('Push to Registry') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: 'dockerhub-creds',
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
+          sh '''
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker push $IMAGE_NAME:$IMAGE_TAG
+            docker push $IMAGE_NAME:latest
+          '''
+        }
+      }
+    }
+
+    stage('Deploy to k3s') {
+      steps {
+        withCredentials([file(credentialsId: 'k3s-config', variable: 'KUBECONFIG')]) {
+          sh '''
+            export KUBECONFIG=$KUBECONFIG
+
+            # Update image in deployment
+            kubectl set image deployment/mini-shop \
+              mini-shop=$IMAGE_NAME:$IMAGE_TAG
+
+            kubectl rollout status deployment/mini-shop
+          '''
+        }
+      }
+    }
+  }
 }

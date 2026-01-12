@@ -46,6 +46,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the app
 COPY . .
 
+# Dockerfile snippet
+COPY bootstrap_admin.py /app/
+
+# Run bootstrap admin script during image build
+RUN python /app/bootstrap_admin.py
+
 # Create uploads folder (ensure it exists)
 RUN mkdir -p /app/static/uploads
 
