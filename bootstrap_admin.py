@@ -6,7 +6,7 @@ from app.models import User
 
 # Load environment variables
 ADMIN_USERNAME = os.getenv("FIRST_ADMIN_USER", "admin")
-ADMIN_PASSWORD = os.getenv("FIRST_ADMIN_PASSWORD", "SuperSecurePassword123")
+ADMIN_PASSWORD = os.getenv("FIRST_ADMIN_PASSWORD", "admin123")
 
 app = create_app()
 
