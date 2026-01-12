@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mini-shop
+  labels:
+    app: mini-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mini-shop
+  template:
+    metadata:
+      labels:
+        app: mini-shop
+    spec:
+      containers:
+        - name: mini-shop
+          image: mini_shop:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
