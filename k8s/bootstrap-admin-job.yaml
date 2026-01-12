@@ -3,14 +3,14 @@ kind: Job
 metadata:
   name: bootstrap-admin
 spec:
+  backoffLimit: 3
   template:
     spec:
+      restartPolicy: OnFailure
       containers:
-        - name: bootstrap-admin
-          image: rvorbita/mini_shop:latest
-          command: ["python", "/app/bootstrap_admin.py"]
-          envFrom:
-            - secretRef:
-                name: mini-shop-secret
-      restartPolicy: Never
-  backoffLimit: 3
+      - name: bootstrap-admin
+        image: rvorbita/mini_shop:latest
+        command: ["python", "bootstrap_admin.py"]
+        envFrom:
+          - secretRef:
+              name: mini-shop-secret

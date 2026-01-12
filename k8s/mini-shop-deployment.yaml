@@ -23,8 +23,6 @@ spec:
           env:
             - name: FLASK_ENV
               value: production
-            - name: DATABASE_URL
-              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@mini-shop-db:5432/$(POSTGRES_DB)
           envFrom:
             - secretRef:
                 name: mini-shop-secret
@@ -34,6 +32,7 @@ spec:
       volumes:
         - name: uploads
           emptyDir: {}
+
 ---
 apiVersion: v1
 kind: Service

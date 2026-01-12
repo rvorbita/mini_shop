@@ -1,24 +1,47 @@
-# bootstrap_admin.py
 import os
-from app import create_app
-from app.extensions import db
+import time
+from werkzeug.security import generate_password_hash
+from sqlalchemy import create_engine
+from app import db
 from app.models import User
 
-# Load environment variables
-ADMIN_USERNAME = os.getenv("FIRST_ADMIN_USER", "admin")
-ADMIN_PASSWORD = os.getenv("FIRST_ADMIN_PASSWORD", "admin123")
+# Configuration
+DB_URI = os.environ.get("DATABASE_URL")
+ADMIN_USER = os.environ.get("ADMIN_USERNAME", "admin")
+ADMIN_PASS = os.environ.get("ADMIN_PASSWORD", "admin123")
 
-app = create_app()
+# Wait for database
+for i in range(20):
+    try:
+        engine = create_engine(DB_URI)
+        conn = engine.connect()
+        conn.close()
+        print("Database is ready")
+        break
+    except Exception as e:
+        print("Waiting for database...", e)
+        time.sleep(5)
+else:
+    raise Exception("Database not ready")
 
-with app.app_context():
-    # Check if any admin already exists
-    existing_admin = User.query.filter_by(is_admin=True).first()
-    if existing_admin:
-        print(f"Admin user already exists: {existing_admin.username}")
-    else:
-        # Create first admin
-        admin_user = User(username=ADMIN_USERNAME, is_admin=True)
-        admin_user.set_password(ADMIN_PASSWORD)
-        db.session.add(admin_user)
-        db.session.commit()
-        print(f"First admin created: {ADMIN_USERNAME}")
+# Create or update admin
+admin = User.query.filter_by(username=ADMIN_USER).first()
+hashed = generate_password_hash(ADMIN_PASS)
+
+# Update or create admin user
+if admin:
+    admin.password = hashed
+    print("Admin password updated")
+else:
+    # Create new admin user
+    admin = User(
+        username=ADMIN_USER,
+        password=hashed,
+        is_admin=True
+    )
+    db.session.add(admin)
+    print("Admin created")
+
+# Commit changes
+db.session.commit()
+print("Bootstrap admin finished")
