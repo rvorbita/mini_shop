@@ -1,4 +1,3 @@
-
 pipeline {
   agent any
 
@@ -60,10 +59,16 @@ pipeline {
           sh '''
             export KUBECONFIG=$KUBECONFIG
 
-            # Update image in deployment
-            kubectl set image deployment/mini-shop \
-              mini-shop=$IMAGE_NAME:$IMAGE_TAG
+            # Apply all Kubernetes manifests
+            kubectl apply -f k8s/
 
+            # Wait for Postgres to be ready
+            kubectl rollout status deployment/mini-shop-db
+
+            # Run bootstrap_admin as a Job
+            kubectl apply -f k8s/bootstrap-admin-job.yaml
+
+            # Deploy/Update mini-shop app
             kubectl rollout status deployment/mini-shop
           '''
         }

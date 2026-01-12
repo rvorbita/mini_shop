@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mini-shop
+  labels:
+    app: mini-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mini-shop
+  template:
+    metadata:
+      labels:
+        app: mini-shop
+    spec:
+      containers:
+        - name: mini-shop
+          image: rvorbita/mini_shop:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+          env:
+            - name: FLASK_ENV
+              value: production
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@mini-shop-db:5432/$(POSTGRES_DB)
+          envFrom:
+            - secretRef:
+                name: mini-shop-secret
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/static/uploads
+      volumes:
+        - name: uploads
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mini-shop
+spec:
+  selector:
+    app: mini-shop
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
+  type: NodePort

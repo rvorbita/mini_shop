@@ -1,9 +1,10 @@
+# Use Python 3.10 slim for smaller image size
 FROM python:3.10-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for building packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends build-essential libpq-dev && \
     rm -rf /var/lib/apt/lists/*
@@ -11,22 +12,21 @@ RUN apt-get update && \
 # Copy requirements first for caching
 COPY requirements.txt .
 
-# Upgrade pip and install dependencies
+# Upgrade pip and install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the app
+# Copy application code
 COPY . .
 
-# Create uploads folder and run bootstrap admin
-RUN mkdir -p static/uploads && \
-    python bootstrap_admin.py
+# Create uploads folder (for static files)
+RUN mkdir -p /app/static/uploads
 
-# Expose port
+# Expose Flask port
 EXPOSE 5001
 
-# Environment variable
+# Set environment variable for Flask
 ENV FLASK_ENV=production
 
-# Production-ready entrypoint
+# Use Gunicorn for production server
 CMD ["gunicorn", "--bind", "0.0.0.0:5001", "run:app"]
